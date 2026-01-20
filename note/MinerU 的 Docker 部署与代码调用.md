@@ -1,5 +1,5 @@
 ---
-tags: []
+tags: ["MinerU", "Docker", "VLM", "OCR"]
 blog: true
 description: 容器化部署 MinerU 的方案, 使用官方 API 调用
 ---
