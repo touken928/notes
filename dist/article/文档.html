@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文档 | Touken</title>
+  <link rel="stylesheet" href="../style.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav>
+    <div class="wrapper">
+      <a href="../index.html" class="brand">TOUKEN</a>
+      <div class="nav-links">
+        <a href="../index.html" class="nav-link">BACK</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrapper">
+    <article>
+      <header class="article-header">
+        <div class="article-tags">
+          
+        </div>
+        <h1 class="article-h1">文档</h1>
+        <div class="article-meta">
+          2026-01-21
+        </div>
+      </header>
+      
+      <div class="markdown-body">
+        <h1 id="0119-%E5%AE%9E%E9%AA%8C" tabindex="-1"><a class="header-anchor" href="#0119-%E5%AE%9E%E9%AA%8C"><span>0119 实验</span></a></h1>
+<h2 id="%E5%A4%A7%E6%A8%A1%E5%9E%8B%E6%9C%AC%E5%9C%B0%E5%8C%96" tabindex="-1"><a class="header-anchor" href="#%E5%A4%A7%E6%A8%A1%E5%9E%8B%E6%9C%AC%E5%9C%B0%E5%8C%96"><span>大模型本地化</span></a></h2>
+<h3 id="minimax-m2.1" tabindex="-1"><a class="header-anchor" href="#minimax-m2.1"><span>MiniMax-M2.1</span></a></h3>
+<p>采用 <strong>MiniMax-M2.1</strong>（总参数228.7B，激活参数10B），原生FP8格式权重，模型体积约<strong>230GB</strong></p>
+<p>使用 <strong>docker + vLLM-openai</strong> 进行部署，在 <strong>8张 RTX 4090 48GB</strong> 显卡上可稳定运行，实测输出速度约为 <strong>20~30 tokens/s</strong>（单请求场景）</p>
+<ul>
+<li>多项权威客观评测（SWE-bench、VIBE、多语言编程等）位居开源前列，尤其在真实工程场景、复杂Agent任务中表现突出。</li>
+<li>模型从训练阶段即采用FP8精度，官方直接发布FP8权重，无需额外量化，几乎无精度损失。</li>
+<li>相比同等体量的稠密模型，230GB的FP8权重极大降低了显存占用与带宽压力，推理速度表现优秀，性价比极高。</li>
+</ul>
+<h3 id="gpt-oss-120b" tabindex="-1"><a class="header-anchor" href="#gpt-oss-120b"><span>gpt-oss-120b</span></a></h3>
+<p>采用 <strong>gpt-oss-120b</strong>（总参数116.83B，激活参数5.13B），原生FP8格式权重，模型体积约<strong>100GB</strong></p>
+<p>使用 <strong>docker + vLLM-openai</strong> 进行部署，在 <strong>4 张 RTX 4090 48GB</strong> 显卡上可稳定运行，实测输出速度可达 <strong>100+ tokens/s</strong>（单请求场景）</p>
+<h3 id="%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98" tabindex="-1"><a class="header-anchor" href="#%E5%AD%98%E5%9C%A8%E7%9A%84%E9%97%AE%E9%A2%98"><span>存在的问题</span></a></h3>
+<p>一个完整系统中，至少需要 GPU 加速的服务包括<strong>文本生成</strong>、<strong>文本向量化</strong>、<strong>图像解析</strong>以及若干其他推理相关服务。受限于 vLLM 自身的资源调度机制以及模型尺寸，如果采用如 <strong>MiniMax-M2.1</strong> 这类需要占用 <strong>8 张 GPU</strong> 的文本生成模型，虽然单模型推理性能较优，但几乎耗尽全部显存，导致其余服务难以部署和运行。</p>
+<p>可以考虑以小尺寸模型替代部分服务，但目前尚缺乏在效果与性能上均具优势的小参数开源模型；另一种可行方案是将部分对时延不敏感或计算强度较低的服务迁移至 <strong>CPU</strong> 侧运行，以缓解 GPU 资源压力并实现整体系统的可用性平衡。</p>
+<h2 id="%E7%9F%A5%E8%AF%86%E5%BA%93%E7%B3%BB%E7%BB%9F" tabindex="-1"><a class="header-anchor" href="#%E7%9F%A5%E8%AF%86%E5%BA%93%E7%B3%BB%E7%BB%9F"><span>知识库系统</span></a></h2>
+<h3 id="%E6%A8%A1%E5%9E%8B%E8%B0%83%E7%94%A8" tabindex="-1"><a class="header-anchor" href="#%E6%A8%A1%E5%9E%8B%E8%B0%83%E7%94%A8"><span>模型调用</span></a></h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">模型名称</th>
+<th style="text-align:left">模型类型</th>
+<th style="text-align:left">显卡数量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">gpt-oss-120b</td>
+<td style="text-align:left">LLM (大语言模型)</td>
+<td style="text-align:left">4 张</td>
+</tr>
+<tr>
+<td style="text-align:left">Qwen3-Embedding-8B</td>
+<td style="text-align:left">Embedding (向量模型)</td>
+<td style="text-align:left">1 张</td>
+</tr>
+<tr>
+<td style="text-align:left">Hunyuan-ocr</td>
+<td style="text-align:left">VLM (视觉模型/OCR)</td>
+<td style="text-align:left">1 张</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ragflow" tabindex="-1"><a class="header-anchor" href="#ragflow"><span>RAGFlow</span></a></h3>
+<p>当前使用 <strong>Hunyuan-ocr</strong> 基本可以满足图片解析的需求，也可替换为 <strong>qwen3-vl-32b</strong> 等多模态模型以提升效果。</p>
+<p>在现有配置下，RAGFlow 对 PDF 的裁剪存在明显问题，需要进一步定位原因；同时，部分文本解析结果不准确，稳定性有待改进。</p>
+<p><img src="./assets/image-20260120013225402.png" alt="image-20260120013225402"></p>
+<p><img src="./assets/image-20260120011511610.png" alt="image-20260120011511610"></p>
+<h3 id="dify" tabindex="-1"><a class="header-anchor" href="#dify"><span>Dify</span></a></h3>
+<p>Dify 默认知识库 <strong>不支持上传超过 15MB 的文件</strong>，且知识库能力并非其核心功能定位，因此在文档解析与检索场景下，<strong>整体效果预期较为有限</strong>。</p>
+<h3 id="rag-anything" tabindex="-1"><a class="header-anchor" href="#rag-anything"><span>RAG-Anything</span></a></h3>
+<p><a href="https://github.com/HKUDS/RAG-Anything">RAG-Anything</a> <strong>直接基于 mineru 进行文档解析</strong>，并内置文档检索等能力，以 <strong>Python 包</strong> 形式提供，整体设计更偏向工具链整合，仍有较大的探索与验证空间。</p>
+<h3 id="%E4%B8%AA%E4%BA%BA%E6%83%B3%E6%B3%95" tabindex="-1"><a class="header-anchor" href="#%E4%B8%AA%E4%BA%BA%E6%83%B3%E6%B3%95"><span>个人想法</span></a></h3>
+<p>环评文档本身信息密集、资料体量大，通过解析得到的结构化数据规模庞大，且内容重合度较高。现有方案多以抽取原文文本并构建知识库为主，侧重“知识存储与检索”，但难以进一步凝练出环评文档中需要重点关注的规则、约束与判断逻辑。这类高价值信息往往仍依赖人工参与进行规则级抽取与整理，或更精细的提取工作流设计。</p>
+<p>随着 LLM 理解能力与上下文窗口持续提升，知识库的设计思路似乎也发生了相应演进：
+从单纯的向量检索被动喂给模型，转向由模型主动发起查询与推理。将已经整理好的规则型知识以文件结构、接口或其他可检索形式提供给 LLM，使其在任务执行过程中按需获取、组合和应用知识，从而实现从“被动接受信息”向“主动获取与使用知识”的转变。</p>
+<p><a href="https://zhuanlan.zhihu.com/p/19229901774">七大Agentic RAG框架技术解析 - 知乎</a></p>
+<h2 id="%E7%8E%AF%E8%AF%84%E5%AE%A1%E9%98%85%E5%B9%B3%E5%8F%B0%E9%83%A8%E7%BD%B2" tabindex="-1"><a class="header-anchor" href="#%E7%8E%AF%E8%AF%84%E5%AE%A1%E9%98%85%E5%B9%B3%E5%8F%B0%E9%83%A8%E7%BD%B2"><span>环评审阅平台部署</span></a></h2>
+<p>为向用户提供服务<code>vite.config.ts</code>的<code>host</code>使用<code>0.0.0.0</code>为佳</p>
+<p>![屏幕截图 2026-01-20 004350](./…/Pictures/Screenshots/屏幕截图 2026-01-20 004350.png)</p>
+<p>错误日志如下</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span>2026-01-20 00:43:04,926 - services.issues_service - ERROR - Error initiating review for document app/data/documents/南通港闸智能装备产业园规划环评报告（报批稿）.pdf: type object 'IssueType' has no attribute 'FormatInconsistency'</span></span>
+<span class="line"><span>2026-01-20 00:43:04,926 - routers.issues - ERROR - Error occurred while streaming issues: type object 'IssueType' has no attribute 'FormatInconsistency'</span></span>
+<span class="line"><span>2026-01-20 00:43:16,481 - services.issues_service - ERROR - Error initiating review for document app/data/documents/南通港闸智能装备产业园规划环评报告（报批稿）.pdf: type object 'IssueType' has no attribute 'FormatInconsistency'</span></span>
+<span class="line"><span>2026-01-20 00:43:16,482 - routers.issues - ERROR - Error occurred while streaming issues: type object 'IssueType' has no attribute 'FormatInconsistency'</span></span>
+<span class="line"><span></span></span></code></pre>
+
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <div class="wrapper">
+      &copy; 2026 Touken. Minimalist.
+    </div>
+  </footer>
+</body>
+</html>

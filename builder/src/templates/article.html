@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{TITLE}} | Touken</title>
+  <link rel="stylesheet" href="../style.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav>
+    <div class="wrapper">
+      <a href="../index.html" class="brand">TOUKEN</a>
+      <div class="nav-links">
+        <a href="../index.html" class="nav-link">BACK</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrapper">
+    <article>
+      <header class="article-header">
+        <div class="article-tags">
+          {{TAGS}}
+        </div>
+        <h1 class="article-h1">{{TITLE}}</h1>
+        <div class="article-meta">
+          {{UPDATED_AT}}
+        </div>
+      </header>
+      
+      <div class="markdown-body">
+        {{CONTENT}}
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <div class="wrapper">
+      &copy; 2026 Touken. Minimalist.
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Touken</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script>
+    window.ARTICLES = {{ARTICLES}};
+  </script>
+</head>
+<body>
+  <nav>
+    <div class="wrapper">
+      <a href="index.html" class="brand">TOUKEN</a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">BLOG</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrapper">
+    <!-- Search Section -->
+    <div class="search-box">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search...">
+      <div id="tagCloud" class="tag-cloud">
+        {{TAG_BUTTONS}}
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <span>ARTICLES</span>
+      <span id="resultCount">{{ARTICLE_COUNT}} Total</span>
+    </div>
+
+    <!-- List -->
+    <div id="articleList">
+      {{ARTICLE_LIST}}
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrapper">
+      &copy; 2026 Touken. Minimalist.
+    </div>
+  </footer>
+
+  <script>
+{{APP_JS}}
+  </script>
+</body>
+</html>
