@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Touken</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script>
+    window.ARTICLES = [{"id":"architecture","title":"architecture","description":"","tags":["架构","设计","草稿","1","222222222","11111113","4","5","6","7"],"updatedAt":"2026-01-20T18:36:32.985Z"},{"id":"hello-world","title":"hello-world","description":"欢迎来到我的博客，这是一个使用 Node.js + React + Tailwind CSS 构建的静态博客系统。","tags":[],"updatedAt":"2026-01-20T18:36:32.985Z"},{"id":"typescript-guide","title":"typescript-guide","description":"TypeScript 是 JavaScript 的超集，添加了类型系统，提供更好的类型检查和 IDE 支持。","tags":["TypeScript","编程"],"updatedAt":"2026-01-20T18:36:32.985Z"},{"id":"文档","title":"文档","description":"","tags":[],"updatedAt":"2026-01-20T18:36:32.985Z"}];
+  </script>
+</head>
+<body>
+  <nav>
+    <div class="wrapper">
+      <a href="index.html" class="brand">TOUKEN</a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">BLOG</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrapper">
+    <!-- Search Section -->
+    <div class="search-box">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search...">
+      <div id="tagCloud" class="tag-cloud">
+        <button class="tag-btn" data-tag="1">1 <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="4">4 <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="5">5 <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="6">6 <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="7">7 <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="11111113">11111113 <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="222222222">222222222 <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="架构">架构 <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="设计">设计 <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="草稿">草稿 <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="TypeScript">TypeScript <span class="text-xs opacity-50 ml-1">1</span></button><button class="tag-btn" data-tag="编程">编程 <span class="text-xs opacity-50 ml-1">1</span></button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <span>ARTICLES</span>
+      <span id="resultCount">4 Total</span>
+    </div>
+
+    <!-- List -->
+    <div id="articleList">
+      
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrapper">
+      &copy; 2026 Touken. Minimalist.
+    </div>
+  </footer>
+
+  <script>
+(function() {
+  'use strict';
+
+  const articles = window.ARTICLES || [];
+
+  let selectedTags = new Set();
+  let searchQuery = '';
+  let elements;
+
+  function init() {
+    elements = {
+      searchInput: document.getElementById('searchInput'),
+      tagCloud: document.getElementById('tagCloud'),
+      articleList: document.getElementById('articleList'),
+      resultCount: document.getElementById('resultCount'),
+    };
+
+    if (elements.searchInput) {
+      elements.searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim().toLowerCase();
+        render();
+      });
+    }
+
+    if (elements.tagCloud) {
+      elements.tagCloud.addEventListener('click', (e) => {
+        // Find the button element even if child is clicked
+        const btn = e.target.closest('.tag-btn');
+        if (btn) {
+          toggleTag(btn.dataset.tag);
+        }
+      });
+    }
+
+    render();
+  }
+
+  function toggleTag(tag) {
+    if (selectedTags.has(tag)) {
+      selectedTags.delete(tag);
+    } else {
+      selectedTags.add(tag);
+    }
+    updateTagButtons();
+    render();
+  }
+
+  function updateTagButtons() {
+    document.querySelectorAll('.tag-btn').forEach((btn) => {
+      const tag = btn.dataset.tag;
+      if (selectedTags.has(tag)) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  function filterArticles(list) {
+    if (selectedTags.size > 0) {
+      list = list.filter((a) =>
+        a.tags.some((tag) => selectedTags.has(tag))
+      );
+    }
+
+    if (searchQuery) {
+      list = list.filter((a) => {
+        const title = a.title.toLowerCase();
+        const description = (a.description || '').toLowerCase();
+        return title.includes(searchQuery) || description.includes(searchQuery);
+      });
+    }
+
+    return list;
+  }
+
+  function sortArticles(list) {
+    return [...list].sort((a, b) => {
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    });
+  }
+
+  function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).replace(/\//g, '-');
+  }
+
+  function renderItem(article) {
+    return `
+      <a href="article/${article.id}.html" class="article-item">
+        <div class="article-date">${formatDate(article.updatedAt)}</div>
+        <h2 class="article-title">${article.title}</h2>
+        ${article.description ? `<p class="text-[var(--fg-light)] mt-2 line-clamp-2">${article.description}</p>` : ''}
+      </a>
+    `;
+  }
+
+  function render() {
+    let list = filterArticles(articles);
+    list = sortArticles(list);
+
+    const container = elements.articleList;
+    if (list.length === 0) {
+      container.innerHTML = '<div class="py-12 text-center text-[var(--fg-light)]">No articles found</div>';
+      if (elements.resultCount) elements.resultCount.textContent = '0 Total';
+      return;
+    }
+
+    container.innerHTML = list
+      .map((article) => renderItem(article))
+      .join('');
+      
+    if (elements.resultCount) {
+      elements.resultCount.textContent = `${list.length} Total`;
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+  </script>
+</body>
+</html>
