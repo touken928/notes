@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MinerU 的 Docker 部署与代码调用 | Touken</title>
+  <link rel="stylesheet" href="../style.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav>
+    <div class="wrapper">
+      <a href="../index.html" class="brand">TOUKEN</a>
+      <div class="nav-links">
+        <a href="../index.html" class="nav-link">BACK</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrapper">
+    <article>
+      <header class="article-header">
+        <div class="article-tags">
+          <span class="tag">MinerU</span> <span class="tag">Docker</span> <span class="tag">VLM</span> <span class="tag">OCR</span>
+        </div>
+        <h1 class="article-h1">MinerU 的 Docker 部署与代码调用</h1>
+        <div class="article-meta">
+          2026-01-20
+        </div>
+      </header>
+      
+      <div class="markdown-body">
+        <h1 id="mineru-%E7%9A%84-docker-%E9%83%A8%E7%BD%B2%E4%B8%8E%E4%BB%A3%E7%A0%81%E8%B0%83%E7%94%A8" tabindex="-1"><a class="header-anchor" href="#mineru-%E7%9A%84-docker-%E9%83%A8%E7%BD%B2%E4%B8%8E%E4%BB%A3%E7%A0%81%E8%B0%83%E7%94%A8"><span>MinerU 的 Docker 部署与代码调用</span></a></h1>
+<blockquote>
+<p>文章实验于2026年1月6日，使用RTX4060laptop显卡的Windows电脑，通过WSL运行Fedora-43，在科学上网环境下执行。</p>
+</blockquote>
+<h2 id="%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87" tabindex="-1"><a class="header-anchor" href="#%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87"><span>环境准备</span></a></h2>
+<h3 id="1.-linux-%E7%8E%AF%E5%A2%83" tabindex="-1"><a class="header-anchor" href="#1.-linux-%E7%8E%AF%E5%A2%83"><span>1. Linux 环境</span></a></h3>
+<p>满足 MinerU 要求：</p>
+<ul>
+<li>可能仅在 Ampere（对应30系）、Ada Lovelace（对应40系）、Hopper架构上工作（H100 H200等）。</li>
+<li>设备应包含 Volta 及以后架构的显卡，且显存大于等于 8GB。</li>
+<li>物理机的显卡驱动需支持 CUDA 12.8 或更高版本，可以通过 <code>nvidia-smi</code> 命令检查驱动版本。</li>
+<li>Docker 容器中能够访问物理机的显卡设备。</li>
+</ul>
+<h3 id="2.-docker" tabindex="-1"><a class="header-anchor" href="#2.-docker"><span>2. Docker</span></a></h3>
+<p>参考官方文档安装 Docker：<a href="https://docs.docker.com/engine/install/">Install | Docker Docs</a></p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">curl</span><span style="color:#2B5581"> -fsSL</span><span style="color:#2B5581"> https://get.docker.com</span><span style="color:#2B5581"> -o</span><span style="color:#2B5581"> get-docker.sh</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> sh</span><span style="color:#2B5581"> get-docker.sh</span></span>
+<span class="line"></span></code></pre>
+<h3 id="3.-nvidia-container-toolkit" tabindex="-1"><a class="header-anchor" href="#3.-nvidia-container-toolkit"><span>3. NVIDIA Container Toolkit</span></a></h3>
+<p>参考 <a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html">NVIDIA 容器工具包安装指南</a></p>
+<h4 id="%E9%85%8D%E7%BD%AE%E7%94%9F%E4%BA%A7%E4%BB%93%E5%BA%93" tabindex="-1"><a class="header-anchor" href="#%E9%85%8D%E7%BD%AE%E7%94%9F%E4%BA%A7%E4%BB%93%E5%BA%93"><span>配置生产仓库</span></a></h4>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">curl</span><span style="color:#2B5581"> -s</span><span style="color:#2B5581"> -L</span><span style="color:#2B5581"> https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo</span><span style="color:#D32F2F"> |</span><span style="color:#24292EFF"> \</span></span>
+<span class="line"><span style="color:#6F42C1">  sudo</span><span style="color:#2B5581"> tee</span><span style="color:#2B5581"> /etc/yum.repos.d/nvidia-container-toolkit.repo</span></span>
+<span class="line"></span></code></pre>
+<h4 id="%E5%AE%89%E8%A3%85-nvidia-%E5%AE%B9%E5%99%A8%E5%B7%A5%E5%85%B7%E5%8C%85" tabindex="-1"><a class="header-anchor" href="#%E5%AE%89%E8%A3%85-nvidia-%E5%AE%B9%E5%99%A8%E5%B7%A5%E5%85%B7%E5%8C%85"><span>安装 NVIDIA 容器工具包</span></a></h4>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#D32F2F">export</span><span style="color:#24292EFF"> NVIDIA_CONTAINER_TOOLKIT_VERSION</span><span style="color:#D32F2F">=</span><span style="color:#24292EFF">1.18.1-1</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> -y</span><span style="color:#24292EFF"> \</span></span>
+<span class="line"><span style="color:#2B5581">    nvidia-container-toolkit-</span><span style="color:#24292EFF">${NVIDIA_CONTAINER_TOOLKIT_VERSION} \</span></span>
+<span class="line"><span style="color:#2B5581">    nvidia-container-toolkit-base-</span><span style="color:#24292EFF">${NVIDIA_CONTAINER_TOOLKIT_VERSION} \</span></span>
+<span class="line"><span style="color:#2B5581">    libnvidia-container-tools-</span><span style="color:#24292EFF">${NVIDIA_CONTAINER_TOOLKIT_VERSION} \</span></span>
+<span class="line"><span style="color:#2B5581">    libnvidia-container1-</span><span style="color:#24292EFF">${NVIDIA_CONTAINER_TOOLKIT_VERSION}</span></span>
+<span class="line"></span></code></pre>
+<h3 id="%E7%94%9F%E6%88%90%E9%85%8D%E7%BD%AE" tabindex="-1"><a class="header-anchor" href="#%E7%94%9F%E6%88%90%E9%85%8D%E7%BD%AE"><span>生成配置</span></a></h3>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span>sudo nvidia-ctk runtime configure --runtime=docker</span></span>
+<span class="line"><span></span></span></code></pre>
+<h3 id="%E9%87%8D%E5%90%AF-docker-%E6%9C%8D%E5%8A%A1" tabindex="-1"><a class="header-anchor" href="#%E9%87%8D%E5%90%AF-docker-%E6%9C%8D%E5%8A%A1"><span>重启 Docker 服务</span></a></h3>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span>sudo systemctl restart docker</span></span>
+<span class="line"><span></span></span></code></pre>
+<h2 id="%E6%9E%84%E5%BB%BA%E5%92%8C%E8%BF%90%E8%A1%8C%E5%AE%B9%E5%99%A8" tabindex="-1"><a class="header-anchor" href="#%E6%9E%84%E5%BB%BA%E5%92%8C%E8%BF%90%E8%A1%8C%E5%AE%B9%E5%99%A8"><span>构建和运行容器</span></a></h2>
+<p>参考 <a href="https://opendatalab.github.io/MinerU/zh/quick_start/docker_deployment/">MinerU Docker 部署</a></p>
+<h3 id="1.-%E6%9E%84%E5%BB%BA%E9%95%9C%E5%83%8F" tabindex="-1"><a class="header-anchor" href="#1.-%E6%9E%84%E5%BB%BA%E9%95%9C%E5%83%8F"><span>1. 构建镜像</span></a></h3>
+<p><a href="https://github.com/opendatalab/MinerU/blob/master/docker/china/Dockerfile">Dockerfile</a> 默认使用 <code>vllm/vllm-openai:v0.10.1.1</code> 作为基础镜像， 该版本支持的显卡型号有限。</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">wget</span><span style="color:#2B5581"> https://gcore.jsdelivr.net/gh/opendatalab/MinerU@master/docker/china/Dockerfile</span></span>
+<span class="line"><span style="color:#6F42C1">docker</span><span style="color:#2B5581"> build</span><span style="color:#2B5581"> -t</span><span style="color:#2B5581"> mineru:latest</span><span style="color:#2B5581"> -f</span><span style="color:#2B5581"> Dockerfile</span><span style="color:#2B5581"> .</span></span>
+<span class="line"></span></code></pre>
+<h3 id="2.-%E5%90%AF%E5%8A%A8%E6%9C%8D%E5%8A%A1" tabindex="-1"><a class="header-anchor" href="#2.-%E5%90%AF%E5%8A%A8%E6%9C%8D%E5%8A%A1"><span>2. 启动服务</span></a></h3>
+<p>官方提供了 <a href="https://github.com/opendatalab/MinerU/blob/master/docker/compose.yaml">compose.yml</a> 文件，可以通过它来快速启动 MinerU 服务。</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">wget</span><span style="color:#2B5581"> https://gcore.jsdelivr.net/gh/opendatalab/MinerU@master/docker/compose.yaml</span></span>
+<span class="line"></span></code></pre>
+<p>启动 Web API 服务，在浏览器中访问 <code>http://&lt;server_ip&gt;:8000/docs</code> 查看 API 文档。</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">docker</span><span style="color:#2B5581"> compose</span><span style="color:#2B5581"> -f</span><span style="color:#2B5581"> compose.yaml</span><span style="color:#2B5581"> --profile</span><span style="color:#2B5581"> api</span><span style="color:#2B5581"> up</span><span style="color:#2B5581"> -d</span></span>
+<span class="line"></span></code></pre>
+<h2 id="%E4%BD%BF%E7%94%A8-api" tabindex="-1"><a class="header-anchor" href="#%E4%BD%BF%E7%94%A8-api"><span>使用 API</span></a></h2>
+<h3 id="1.-sdk-%E5%B0%81%E8%A3%85" tabindex="-1"><a class="header-anchor" href="#1.-sdk-%E5%B0%81%E8%A3%85"><span>1. SDK 封装</span></a></h3>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#D32F2F">import</span><span style="color:#24292EFF"> io</span></span>
+<span class="line"><span style="color:#D32F2F">import</span><span style="color:#24292EFF"> requests</span></span>
+<span class="line"><span style="color:#D32F2F">from</span><span style="color:#24292EFF"> typing </span><span style="color:#D32F2F">import</span><span style="color:#24292EFF"> Iterable</span><span style="color:#212121">,</span><span style="color:#24292EFF"> Tuple</span><span style="color:#212121">,</span><span style="color:#24292EFF"> Union</span><span style="color:#212121">,</span><span style="color:#24292EFF"> BinaryIO</span><span style="color:#212121">,</span><span style="color:#24292EFF"> Optional</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C2C3C5"># 支持的文件输入形式</span></span>
+<span class="line"><span style="color:#24292EFF">FileInput </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> Union</span><span style="color:#212121">[</span></span>
+<span class="line"><span style="color:#1976D2">    bytes</span><span style="color:#212121">,</span><span style="color:#C2C3C5">                  # raw bytes</span></span>
+<span class="line"><span style="color:#24292EFF">    Tuple</span><span style="color:#212121">[</span><span style="color:#1976D2">str</span><span style="color:#212121">,</span><span style="color:#1976D2"> bytes</span><span style="color:#212121">],</span><span style="color:#C2C3C5">      # (filename, bytes)</span></span>
+<span class="line"><span style="color:#24292EFF">    BinaryIO</span><span style="color:#212121">,</span><span style="color:#C2C3C5">               # file-like object</span></span>
+<span class="line"><span style="color:#212121">]</span></span>
+<span class="line"></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">class</span><span style="color:#6F42C1"> PdfParseClient</span><span style="color:#24292EFF">:</span></span>
+<span class="line"><span style="color:#D32F2F">    def</span><span style="color:#6F42C1"> __init__</span><span style="color:#24292EFF">(</span><span style="color:#FF9800">self</span><span style="color:#212121">,</span><span style="color:#FF9800"> base_url</span><span style="color:#212121">:</span><span style="color:#1976D2"> str</span><span style="color:#212121">,</span><span style="color:#FF9800"> timeout</span><span style="color:#212121">:</span><span style="color:#1976D2"> int</span><span style="color:#D32F2F"> =</span><span style="color:#1976D2"> 300</span><span style="color:#24292EFF">):</span></span>
+<span class="line"><span style="color:#24292EFF">        self</span><span style="color:#212121">.</span><span style="color:#24292EFF">base_url </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> base_url</span><span style="color:#212121">.</span><span style="color:#6F42C1">rstrip</span><span style="color:#212121">(</span><span style="color:#22863A">"/"</span><span style="color:#212121">)</span></span>
+<span class="line"><span style="color:#24292EFF">        self</span><span style="color:#212121">.</span><span style="color:#24292EFF">timeout </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> timeout</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">    def</span><span style="color:#6F42C1"> parse</span><span style="color:#24292EFF">(</span></span>
+<span class="line"><span style="color:#FF9800">        self</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#FF9800">        files</span><span style="color:#212121">:</span><span style="color:#24292EFF"> Iterable</span><span style="color:#212121">[</span><span style="color:#24292EFF">FileInput</span><span style="color:#212121">],</span></span>
+<span class="line"><span style="color:#D32F2F">        *</span><span style="color:#24292EFF">,</span></span>
+<span class="line"><span style="color:#FF9800">        backend</span><span style="color:#212121">:</span><span style="color:#24292EFF"> Optional</span><span style="color:#212121">[</span><span style="color:#1976D2">str</span><span style="color:#212121">]</span><span style="color:#D32F2F"> =</span><span style="color:#1976D2"> None</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#FF9800">        parse_method</span><span style="color:#212121">:</span><span style="color:#24292EFF"> Optional</span><span style="color:#212121">[</span><span style="color:#1976D2">str</span><span style="color:#212121">]</span><span style="color:#D32F2F"> =</span><span style="color:#1976D2"> None</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#FF9800">        lang_list</span><span style="color:#212121">:</span><span style="color:#24292EFF"> Optional</span><span style="color:#212121">[</span><span style="color:#24292EFF">list</span><span style="color:#212121">[</span><span style="color:#1976D2">str</span><span style="color:#212121">]]</span><span style="color:#D32F2F"> =</span><span style="color:#1976D2"> None</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#FF9800">        return_images</span><span style="color:#212121">:</span><span style="color:#1976D2"> bool</span><span style="color:#D32F2F"> =</span><span style="color:#1976D2"> False</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#FF9800">        response_format_zip</span><span style="color:#212121">:</span><span style="color:#1976D2"> bool</span><span style="color:#D32F2F"> =</span><span style="color:#1976D2"> False</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#24292EFF">    ):</span></span>
+<span class="line"><span style="color:#C2C3C5">        """</span></span>
+<span class="line"><span style="color:#C2C3C5">        Minimal /file_parse wrapper</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C2C3C5">        :param files: binary file inputs</span></span>
+<span class="line"><span style="color:#C2C3C5">        :param backend: pipeline | vlm-* | hybrid-*</span></span>
+<span class="line"><span style="color:#C2C3C5">        :param parse_method: auto | txt | ocr</span></span>
+<span class="line"><span style="color:#C2C3C5">        :param lang_list: OCR language list</span></span>
+<span class="line"><span style="color:#C2C3C5">        :param return_images: return extracted images</span></span>
+<span class="line"><span style="color:#C2C3C5">        :param response_format_zip: return ZIP instead of JSON</span></span>
+<span class="line"><span style="color:#C2C3C5">        """</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292EFF">        url </span><span style="color:#D32F2F">=</span><span style="color:#D32F2F"> f</span><span style="color:#22863A">"</span><span style="color:#1976D2">{</span><span style="color:#24292EFF">self</span><span style="color:#212121">.</span><span style="color:#24292EFF">base_url</span><span style="color:#1976D2">}</span><span style="color:#22863A">/file_parse"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292EFF">        multipart_files </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> []</span></span>
+<span class="line"><span style="color:#24292EFF">        opened </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> []</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">        for</span><span style="color:#24292EFF"> i</span><span style="color:#212121">,</span><span style="color:#24292EFF"> f </span><span style="color:#D32F2F">in</span><span style="color:#6F42C1"> enumerate</span><span style="color:#212121">(files):</span></span>
+<span class="line"><span style="color:#D32F2F">            if</span><span style="color:#6F42C1"> isinstance</span><span style="color:#212121">(f, </span><span style="color:#1976D2">bytes</span><span style="color:#212121">):</span></span>
+<span class="line"><span style="color:#24292EFF">                bio </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> io</span><span style="color:#212121">.</span><span style="color:#6F42C1">BytesIO</span><span style="color:#212121">(f)</span></span>
+<span class="line"><span style="color:#24292EFF">                multipart_files</span><span style="color:#212121">.</span><span style="color:#6F42C1">append</span><span style="color:#212121">(</span></span>
+<span class="line"><span style="color:#212121">                    (</span><span style="color:#22863A">"files"</span><span style="color:#212121">, (</span><span style="color:#D32F2F">f</span><span style="color:#22863A">"file_</span><span style="color:#1976D2">{</span><span style="color:#212121">i</span><span style="color:#1976D2">}</span><span style="color:#22863A">.bin"</span><span style="color:#212121">, bio))</span></span>
+<span class="line"><span style="color:#212121">                )</span></span>
+<span class="line"><span style="color:#24292EFF">                opened</span><span style="color:#212121">.</span><span style="color:#6F42C1">append</span><span style="color:#212121">(bio)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">            elif</span><span style="color:#6F42C1"> isinstance</span><span style="color:#212121">(f, </span><span style="color:#1976D2">tuple</span><span style="color:#212121">):</span></span>
+<span class="line"><span style="color:#24292EFF">                name</span><span style="color:#212121">,</span><span style="color:#24292EFF"> data </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> f</span></span>
+<span class="line"><span style="color:#24292EFF">                bio </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> io</span><span style="color:#212121">.</span><span style="color:#6F42C1">BytesIO</span><span style="color:#212121">(data)</span></span>
+<span class="line"><span style="color:#24292EFF">                multipart_files</span><span style="color:#212121">.</span><span style="color:#6F42C1">append</span><span style="color:#212121">((</span><span style="color:#22863A">"files"</span><span style="color:#212121">, (name, bio)))</span></span>
+<span class="line"><span style="color:#24292EFF">                opened</span><span style="color:#212121">.</span><span style="color:#6F42C1">append</span><span style="color:#212121">(bio)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">            elif</span><span style="color:#6F42C1"> hasattr</span><span style="color:#212121">(f, </span><span style="color:#22863A">"read"</span><span style="color:#212121">):</span></span>
+<span class="line"><span style="color:#24292EFF">                name </span><span style="color:#D32F2F">=</span><span style="color:#6F42C1"> getattr</span><span style="color:#212121">(f, </span><span style="color:#22863A">"name"</span><span style="color:#212121">, </span><span style="color:#D32F2F">f</span><span style="color:#22863A">"file_</span><span style="color:#1976D2">{</span><span style="color:#212121">i</span><span style="color:#1976D2">}</span><span style="color:#22863A">.bin"</span><span style="color:#212121">)</span></span>
+<span class="line"><span style="color:#24292EFF">                multipart_files</span><span style="color:#212121">.</span><span style="color:#6F42C1">append</span><span style="color:#212121">((</span><span style="color:#22863A">"files"</span><span style="color:#212121">, (name, f)))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">            else</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#D32F2F">                raise</span><span style="color:#1976D2"> TypeError</span><span style="color:#212121">(</span><span style="color:#D32F2F">f</span><span style="color:#22863A">"Unsupported file type: </span><span style="color:#1976D2">{type</span><span style="color:#212121">(f)</span><span style="color:#1976D2">}</span><span style="color:#22863A">"</span><span style="color:#212121">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292EFF">        data </span><span style="color:#D32F2F">=</span><span style="color:#212121"> {}</span></span>
+<span class="line"><span style="color:#D32F2F">        if</span><span style="color:#24292EFF"> backend</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#24292EFF">            data</span><span style="color:#212121">[</span><span style="color:#22863A">"backend"</span><span style="color:#212121">]</span><span style="color:#D32F2F"> =</span><span style="color:#24292EFF"> backend</span></span>
+<span class="line"><span style="color:#D32F2F">        if</span><span style="color:#24292EFF"> parse_method</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#24292EFF">            data</span><span style="color:#212121">[</span><span style="color:#22863A">"parse_method"</span><span style="color:#212121">]</span><span style="color:#D32F2F"> =</span><span style="color:#24292EFF"> parse_method</span></span>
+<span class="line"><span style="color:#D32F2F">        if</span><span style="color:#24292EFF"> lang_list</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#24292EFF">            data</span><span style="color:#212121">[</span><span style="color:#22863A">"lang_list"</span><span style="color:#212121">]</span><span style="color:#D32F2F"> =</span><span style="color:#24292EFF"> lang_list</span></span>
+<span class="line"><span style="color:#D32F2F">        if</span><span style="color:#24292EFF"> return_images</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#24292EFF">            data</span><span style="color:#212121">[</span><span style="color:#22863A">"return_images"</span><span style="color:#212121">]</span><span style="color:#D32F2F"> =</span><span style="color:#22863A"> "true"</span></span>
+<span class="line"><span style="color:#D32F2F">        if</span><span style="color:#24292EFF"> response_format_zip</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#24292EFF">            data</span><span style="color:#212121">[</span><span style="color:#22863A">"response_format_zip"</span><span style="color:#212121">]</span><span style="color:#D32F2F"> =</span><span style="color:#22863A"> "true"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292EFF">        resp </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> requests</span><span style="color:#212121">.</span><span style="color:#6F42C1">post</span><span style="color:#212121">(</span></span>
+<span class="line"><span style="color:#212121">            url,</span></span>
+<span class="line"><span style="color:#212121">            files</span><span style="color:#D32F2F">=</span><span style="color:#212121">multipart_files,</span></span>
+<span class="line"><span style="color:#212121">            data</span><span style="color:#D32F2F">=</span><span style="color:#212121">data,</span></span>
+<span class="line"><span style="color:#212121">            timeout</span><span style="color:#D32F2F">=</span><span style="color:#212121">self.timeout,</span></span>
+<span class="line"><span style="color:#212121">        )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">        for</span><span style="color:#24292EFF"> f </span><span style="color:#D32F2F">in</span><span style="color:#24292EFF"> opened</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#D32F2F">            try</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#24292EFF">                f</span><span style="color:#212121">.</span><span style="color:#6F42C1">close</span><span style="color:#212121">()</span></span>
+<span class="line"><span style="color:#D32F2F">            except</span><span style="color:#1976D2"> Exception</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#D32F2F">                pass</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292EFF">        resp</span><span style="color:#212121">.</span><span style="color:#6F42C1">raise_for_status</span><span style="color:#212121">()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">        if</span><span style="color:#22863A"> "application/zip"</span><span style="color:#D32F2F"> in</span><span style="color:#24292EFF"> resp</span><span style="color:#212121">.</span><span style="color:#24292EFF">headers</span><span style="color:#212121">.</span><span style="color:#6F42C1">get</span><span style="color:#212121">(</span><span style="color:#22863A">"Content-Type"</span><span style="color:#212121">, </span><span style="color:#22863A">""</span><span style="color:#212121">):</span></span>
+<span class="line"><span style="color:#D32F2F">            return</span><span style="color:#24292EFF"> resp</span><span style="color:#212121">.</span><span style="color:#24292EFF">content</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">        return</span><span style="color:#24292EFF"> resp</span><span style="color:#212121">.</span><span style="color:#6F42C1">json</span><span style="color:#212121">()</span></span>
+<span class="line"></span></code></pre>
+<h3 id="%E7%9B%B4%E6%8E%A5%E4%BC%A0%E4%BA%8C%E8%BF%9B%E5%88%B6" tabindex="-1"><a class="header-anchor" href="#%E7%9B%B4%E6%8E%A5%E4%BC%A0%E4%BA%8C%E8%BF%9B%E5%88%B6"><span>直接传二进制</span></a></h3>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#D32F2F">from</span><span style="color:#24292EFF"> pdf_parse_sdk </span><span style="color:#D32F2F">import</span><span style="color:#24292EFF"> PdfParseClient</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292EFF">client </span><span style="color:#D32F2F">=</span><span style="color:#6F42C1"> PdfParseClient</span><span style="color:#212121">(</span><span style="color:#22863A">"http://127.0.0.1:8000"</span><span style="color:#212121">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">with</span><span style="color:#6F42C1"> open</span><span style="color:#212121">(</span><span style="color:#22863A">"demo.pdf"</span><span style="color:#212121">, </span><span style="color:#22863A">"rb"</span><span style="color:#212121">)</span><span style="color:#D32F2F"> as</span><span style="color:#24292EFF"> f</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#24292EFF">    result </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> client</span><span style="color:#212121">.</span><span style="color:#6F42C1">parse</span><span style="color:#212121">(</span></span>
+<span class="line"><span style="color:#212121">        files</span><span style="color:#D32F2F">=</span><span style="color:#212121">[(</span><span style="color:#22863A">"demo.pdf"</span><span style="color:#212121">, f.</span><span style="color:#6F42C1">read</span><span style="color:#212121">())],</span></span>
+<span class="line"><span style="color:#212121">        return_images</span><span style="color:#D32F2F">=</span><span style="color:#1976D2">True</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#212121">        backend</span><span style="color:#D32F2F">=</span><span style="color:#22863A">"pipeline"</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#212121">    )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6F42C1">print</span><span style="color:#212121">(result)</span></span>
+<span class="line"></span></code></pre>
+<h3 id="%E5%86%85%E5%AD%98%E6%B5%81" tabindex="-1"><a class="header-anchor" href="#%E5%86%85%E5%AD%98%E6%B5%81"><span>内存流</span></a></h3>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#D32F2F">from</span><span style="color:#24292EFF"> io </span><span style="color:#D32F2F">import</span><span style="color:#24292EFF"> BytesIO</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#24292EFF">result </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> client</span><span style="color:#212121">.</span><span style="color:#6F42C1">parse</span><span style="color:#212121">(</span></span>
+<span class="line"><span style="color:#212121">    files</span><span style="color:#D32F2F">=</span><span style="color:#212121">[</span><span style="color:#6F42C1">BytesIO</span><span style="color:#212121">(pdf_bytes)],</span></span>
+<span class="line"><span style="color:#212121">    backend</span><span style="color:#D32F2F">=</span><span style="color:#22863A">"pipeline"</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#212121">    parse_method</span><span style="color:#D32F2F">=</span><span style="color:#22863A">"ocr"</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#212121">)</span></span>
+<span class="line"></span></code></pre>
+<h3 id="zip-%E8%BF%94%E5%9B%9E" tabindex="-1"><a class="header-anchor" href="#zip-%E8%BF%94%E5%9B%9E"><span>ZIP 返回</span></a></h3>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#24292EFF">zip_bytes </span><span style="color:#D32F2F">=</span><span style="color:#24292EFF"> client</span><span style="color:#212121">.</span><span style="color:#6F42C1">parse</span><span style="color:#212121">(</span></span>
+<span class="line"><span style="color:#212121">    files</span><span style="color:#D32F2F">=</span><span style="color:#212121">[(</span><span style="color:#22863A">"paper.pdf"</span><span style="color:#212121">, pdf_bytes)],</span></span>
+<span class="line"><span style="color:#212121">    backend</span><span style="color:#D32F2F">=</span><span style="color:#22863A">"hybrid-http-client"</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#212121">    response_format_zip</span><span style="color:#D32F2F">=</span><span style="color:#1976D2">True</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#212121">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#D32F2F">with</span><span style="color:#6F42C1"> open</span><span style="color:#212121">(</span><span style="color:#22863A">"result.zip"</span><span style="color:#212121">, </span><span style="color:#22863A">"wb"</span><span style="color:#212121">)</span><span style="color:#D32F2F"> as</span><span style="color:#24292EFF"> f</span><span style="color:#212121">:</span></span>
+<span class="line"><span style="color:#24292EFF">    f</span><span style="color:#212121">.</span><span style="color:#6F42C1">write</span><span style="color:#212121">(zip_bytes)</span></span>
+<span class="line"></span></code></pre>
+
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <div class="wrapper">
+      &copy; 2026 Touken. Minimalist.
+    </div>
+  </footer>
+</body>
+</html>
