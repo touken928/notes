@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { execSync } from 'node:child_process';
 import matter from 'gray-matter';
 import MarkdownIt from 'markdown-it';
 import anchor from 'markdown-it-anchor';
@@ -45,7 +46,25 @@ export class ArticleParser {
       const relativePath = path.relative(config.noteDir, filePath);
       const title = path.basename(filePath, '.md');
       const html = this.md.render(markdownContent);
-      const stats = fs.statSync(filePath);
+      
+      let updatedAt: string;
+      try {
+        // Try to get the last commit date from git
+        const gitDate = execSync(`git log -1 --format=%ai "${filePath}"`, {
+          cwd: path.dirname(filePath),
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'ignore'] // Ignore stderr to avoid console noise
+        }).trim();
+
+        if (gitDate) {
+          updatedAt = new Date(gitDate).toISOString();
+        } else {
+          updatedAt = fs.statSync(filePath).mtime.toISOString();
+        }
+      } catch (e) {
+        // Fallback to file system stats if git fails (e.g. not a git repo, file not tracked)
+        updatedAt = fs.statSync(filePath).mtime.toISOString();
+      }
 
       const article: Article = {
         id: this.generateId(relativePath),
@@ -54,7 +73,7 @@ export class ArticleParser {
         html,
         tags: data.tags || [],
         description: data.description || '',
-        updatedAt: stats.mtime.toISOString(),
+        updatedAt,
         relativePath,
       };
 
