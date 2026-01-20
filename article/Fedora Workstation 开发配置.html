@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fedora Workstation 开发配置 | Touken</title>
+  <link rel="stylesheet" href="../style.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <nav>
+    <div class="wrapper">
+      <a href="../index.html" class="brand">TOUKEN</a>
+      <div class="nav-links">
+        <a href="../index.html" class="nav-link">BACK</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="wrapper">
+    <article>
+      <header class="article-header">
+        <div class="article-tags">
+          <span class="tag">Linux</span> <span class="tag">Fedora</span> <span class="tag">Flatpak</span>
+        </div>
+        <h1 class="article-h1">Fedora Workstation 开发配置</h1>
+        <div class="article-meta">
+          2026-01-20
+        </div>
+      </header>
+      
+      <div class="markdown-body">
+        <h1 id="fedora-workstation-%E5%BC%80%E5%8F%91%E9%85%8D%E7%BD%AE" tabindex="-1"><a class="header-anchor" href="#fedora-workstation-%E5%BC%80%E5%8F%91%E9%85%8D%E7%BD%AE"><span>Fedora Workstation 开发配置</span></a></h1>
+<h2 id="%E7%B3%BB%E7%BB%9F%E9%85%8D%E7%BD%AE" tabindex="-1"><a class="header-anchor" href="#%E7%B3%BB%E7%BB%9F%E9%85%8D%E7%BD%AE"><span>系统配置</span></a></h2>
+<h3 id="%E6%9B%B4%E6%94%B9%E4%B8%BB%E6%9C%BA%E5%90%8D" tabindex="-1"><a class="header-anchor" href="#%E6%9B%B4%E6%94%B9%E4%B8%BB%E6%9C%BA%E5%90%8D"><span>更改主机名</span></a></h3>
+<p>将主机名更改为 <code>fedora</code>：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> hostnamectl</span><span style="color:#2B5581"> set-hostname</span><span style="color:#2B5581"> fedora</span></span>
+<span class="line"></span></code></pre>
+<h3 id="%E4%BF%AE%E6%94%B9%E9%95%9C%E5%83%8F%E6%BA%90" tabindex="-1"><a class="header-anchor" href="#%E4%BF%AE%E6%94%B9%E9%95%9C%E5%83%8F%E6%BA%90"><span>修改镜像源</span></a></h3>
+<p>使用清华大学 Fedora 镜像源：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> sed</span><span style="color:#2B5581"> -e</span><span style="color:#22863A"> 's|^metalink=|#metalink=|g'</span><span style="color:#24292EFF"> \</span></span>
+<span class="line"><span style="color:#2B5581">    -e</span><span style="color:#22863A"> 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://mirrors.tuna.tsinghua.edu.cn/fedora|g'</span><span style="color:#24292EFF"> \</span></span>
+<span class="line"><span style="color:#2B5581">    -i.bak</span><span style="color:#24292EFF"> \</span></span>
+<span class="line"><span style="color:#2B5581">    /etc/yum.repos.d/fedora.repo</span><span style="color:#24292EFF"> \</span></span>
+<span class="line"><span style="color:#2B5581">    /etc/yum.repos.d/fedora-updates.repo</span></span>
+<span class="line"></span></code></pre>
+<p>修改镜像后，建议升级并更新系统，之后重启电脑：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> update</span></span>
+<span class="line"></span></code></pre>
+<h3 id="%E9%85%8D%E7%BD%AE%E4%B8%AD%E6%96%87%E8%BE%93%E5%85%A5%E6%B3%95" tabindex="-1"><a class="header-anchor" href="#%E9%85%8D%E7%BD%AE%E4%B8%AD%E6%96%87%E8%BE%93%E5%85%A5%E6%B3%95"><span>配置中文输入法</span></a></h3>
+<p>安装 <code>fcitx5</code> 输入法：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> fcitx5</span><span style="color:#2B5581"> fcitx5-chinese-addons</span><span style="color:#2B5581"> fcitx5-configtool</span><span style="color:#2B5581"> fcitx5-autostart</span></span>
+<span class="line"></span></code></pre>
+<p>修改文件 <strong>/etc/environment</strong>，避免部分软件输入时输入法显示错位：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> msedit</span><span style="color:#2B5581"> /etc/environment</span></span>
+<span class="line"></span></code></pre>
+<p>添加以下内容，登出用户重新加载生效：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span>GTK_IM_MODULE=fcitx</span></span>
+<span class="line"><span>QT_IM_MODULE=fcitx</span></span>
+<span class="line"><span>XMODIFIERS=@im=fcitx</span></span>
+<span class="line"><span>INPUT_METHOD=fcitx</span></span>
+<span class="line"><span>SDL_IM_MODULE=fcitx</span></span>
+<span class="line"><span>GLFW_IM_MODULE=ibus</span></span>
+<span class="line"><span></span></span></code></pre>
+<p>安装 Gnome Shell 输入法插件 <a href="https://extensions.gnome.org/extension/261/kimpanel/">Kimpanel</a>。</p>
+<h3 id="%E5%AE%89%E8%A3%85%E5%B8%B8%E7%94%A8%E6%8F%92%E4%BB%B6" tabindex="-1"><a class="header-anchor" href="#%E5%AE%89%E8%A3%85%E5%B8%B8%E7%94%A8%E6%8F%92%E4%BB%B6"><span>安装常用插件</span></a></h3>
+<ol>
+<li><strong>任务栏插件</strong>（让 Telegram 等应用最小化后可以看到图标）
+<a href="https://extensions.gnome.org/extension/615/appindicator-support/">Appindicator Support</a></li>
+<li><strong>咖啡因插件</strong>（避免电脑进入睡眠）
+<a href="https://extensions.gnome.org/extension/517/caffeine/">Caffeine</a></li>
+<li><strong>边缘操控扩展</strong>（鼠标移动到屏幕底端自动显示 dock）
+<a href="https://extensions.gnome.org/extension/4222/hot-edge/">Hot Edge</a></li>
+<li>你还可以在 Fedora 默认程序列表中找到一个叫做 “拓展” (extensions) 的软件，运行后可以管理和设置已安装的扩展。</li>
+</ol>
+<h2 id="dnf-%E5%8C%85%E7%AE%A1%E7%90%86%E5%AE%89%E8%A3%85%E5%B7%A5%E5%85%B7" tabindex="-1"><a class="header-anchor" href="#dnf-%E5%8C%85%E7%AE%A1%E7%90%86%E5%AE%89%E8%A3%85%E5%B7%A5%E5%85%B7"><span>dnf 包管理安装工具</span></a></h2>
+<h3 id="%E5%AE%89%E8%A3%85%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7" tabindex="-1"><a class="header-anchor" href="#%E5%AE%89%E8%A3%85%E5%B8%B8%E7%94%A8%E5%B7%A5%E5%85%B7"><span>安装常用工具</span></a></h3>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> -y</span><span style="color:#2B5581"> curl</span><span style="color:#2B5581"> wget</span><span style="color:#2B5581"> msedit</span></span>
+<span class="line"></span></code></pre>
+<h3 id="%E5%AE%89%E8%A3%85%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83" tabindex="-1"><a class="header-anchor" href="#%E5%AE%89%E8%A3%85%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83"><span>安装开发环境</span></a></h3>
+<ol>
+<li>
+<p><strong>C++</strong>
+安装基础编译工具和调试工具：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> -y</span><span style="color:#2B5581"> gcc</span><span style="color:#2B5581"> gcc-c++</span><span style="color:#2B5581"> gdb</span><span style="color:#2B5581"> make</span><span style="color:#2B5581"> cmake</span><span style="color:#2B5581"> ninja-build</span></span>
+<span class="line"></span></code></pre>
+<p>可选安装 Clang 工具链：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> -y</span><span style="color:#2B5581"> clang</span><span style="color:#2B5581"> clang-tools-extra</span></span>
+<span class="line"></span></code></pre>
+</li>
+<li>
+<p><strong>Go语言</strong>
+安装 Go 编译器：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> -y</span><span style="color:#2B5581"> golang</span></span>
+<span class="line"></span></code></pre>
+</li>
+<li>
+<p><strong>Node.js</strong>
+安装 Node.js 和 npm：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> -y</span><span style="color:#2B5581"> nodejs</span><span style="color:#2B5581"> npm</span></span>
+<span class="line"></span></code></pre>
+</li>
+<li>
+<p><strong>Python</strong>
+安装 Python：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> -y</span><span style="color:#2B5581"> uv</span></span>
+<span class="line"></span></code></pre>
+</li>
+</ol>
+<h3 id="%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE-git" tabindex="-1"><a class="header-anchor" href="#%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE-git"><span>安装配置 Git</span></a></h3>
+<p>安装 Git：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> -y</span><span style="color:#2B5581"> git</span></span>
+<span class="line"></span></code></pre>
+<p>配置 Git：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#C2C3C5"># 设置默认分支为 main</span></span>
+<span class="line"><span style="color:#6F42C1">git</span><span style="color:#2B5581"> config</span><span style="color:#2B5581"> --global</span><span style="color:#2B5581"> init.defaultBranch</span><span style="color:#2B5581"> main</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C2C3C5"># 配置用户名</span></span>
+<span class="line"><span style="color:#6F42C1">git</span><span style="color:#2B5581"> config</span><span style="color:#2B5581"> --global</span><span style="color:#2B5581"> user.name</span><span style="color:#22863A"> "touken"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C2C3C5"># 配置用户邮箱</span></span>
+<span class="line"><span style="color:#6F42C1">git</span><span style="color:#2B5581"> config</span><span style="color:#2B5581"> --global</span><span style="color:#2B5581"> user.email</span><span style="color:#22863A"> "touken928@foxmail.com"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C2C3C5"># 关闭路径转换，解决中文文件名显示问题</span></span>
+<span class="line"><span style="color:#6F42C1">git</span><span style="color:#2B5581"> config</span><span style="color:#2B5581"> --global</span><span style="color:#2B5581"> core.quotepath</span><span style="color:#1976D2"> false</span></span>
+<span class="line"></span></code></pre>
+<h3 id="%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE-docker" tabindex="-1"><a class="header-anchor" href="#%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE-docker"><span>安装配置 Docker</span></a></h3>
+<ol>
+<li>
+<p><strong>Docker CE</strong> 安装 Docker：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> config-manager</span><span style="color:#2B5581"> addrepo</span><span style="color:#2B5581"> --from-repofile</span><span style="color:#2B5581"> https://download.docker.com/linux/fedora/docker-ce.repo</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C2C3C5"># 可选的使用国内源安装 Docker</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> sed</span><span style="color:#2B5581"> -i</span><span style="color:#22863A"> 's/download.docker.com/mirrors.aliyun.com\/docker-ce/g'</span><span style="color:#2B5581"> /etc/yum.repos.d/docker-ce.repo</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> docker-ce</span><span style="color:#2B5581"> docker-ce-cli</span><span style="color:#2B5581"> containerd.io</span><span style="color:#2B5581"> docker-buildx-plugin</span><span style="color:#2B5581"> docker-compose-plugin</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> systemctl</span><span style="color:#2B5581"> enable</span><span style="color:#2B5581"> --now</span><span style="color:#2B5581"> docker</span></span>
+<span class="line"></span></code></pre>
+<p>开机自启动 Docker：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> systemctl</span><span style="color:#2B5581"> enable</span><span style="color:#2B5581"> docker.service</span></span>
+<span class="line"></span></code></pre>
+<p>启动 Docker：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> systemctl</span><span style="color:#2B5581"> start</span><span style="color:#2B5581"> docker.service</span></span>
+<span class="line"></span></code></pre>
+</li>
+<li>
+<p><strong>解决 Docker 权限问题</strong>：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> usermod</span><span style="color:#2B5581"> -aG</span><span style="color:#2B5581"> docker</span><span style="color:#24292EFF"> $USER</span></span>
+<span class="line"><span style="color:#6F42C1">newgrp</span><span style="color:#2B5581"> docker</span></span>
+<span class="line"></span></code></pre>
+</li>
+<li>
+<p><strong>配置代理</strong>（如果需要）：</p>
+<p>编辑 Docker 配置文件：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> msedit</span><span style="color:#2B5581"> /etc/docker/daemon.json</span></span>
+<span class="line"></span></code></pre>
+<p>添加以下内容：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#24292EFF">{</span></span>
+<span class="line"><span style="color:#D32F2F">   "proxies"</span><span style="color:#212121">:</span><span style="color:#24292EFF"> {</span></span>
+<span class="line"><span style="color:#D32F2F">       "http-proxy"</span><span style="color:#212121">:</span><span style="color:#22863A"> "http://127.0.0.1:10808"</span><span style="color:#212121">,</span></span>
+<span class="line"><span style="color:#D32F2F">       "https-proxy"</span><span style="color:#212121">:</span><span style="color:#22863A"> "http://127.0.0.1:10808"</span></span>
+<span class="line"><span style="color:#24292EFF">   }</span></span>
+<span class="line"><span style="color:#24292EFF">}</span></span>
+<span class="line"></span></code></pre>
+<p>重启 Docker 服务：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> systemctl</span><span style="color:#2B5581"> daemon-reload</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> systemctl</span><span style="color:#2B5581"> restart</span><span style="color:#2B5581"> docker</span></span>
+<span class="line"></span></code></pre>
+</li>
+<li>
+<p><strong>登录 Docker</strong> 并拉取镜像：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">docker</span><span style="color:#2B5581"> login</span></span>
+<span class="line"><span style="color:#6F42C1">docker</span><span style="color:#2B5581"> pull</span><span style="color:#2B5581"> hello-world</span></span>
+<span class="line"></span></code></pre>
+</li>
+</ol>
+<h3 id="%E5%AE%89%E8%A3%85-visual-studio-code" tabindex="-1"><a class="header-anchor" href="#%E5%AE%89%E8%A3%85-visual-studio-code"><span>安装 Visual Studio Code</span></a></h3>
+<ol>
+<li>
+<p>创建 VS Code 仓库文件：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> msedit</span><span style="color:#2B5581"> /etc/yum.repos.d/vscode.repo</span></span>
+<span class="line"></span></code></pre>
+</li>
+<li>
+<p>粘贴以下内容并保存：</p>
+<pre><code>[code]
+name=Visual Studio Code
+baseurl=https://packages.microsoft.com/yumrepos/vscode
+enabled=1
+gpgcheck=1
+gpgkey=https://packages.microsoft.com/keys/microsoft.asc
+</code></pre>
+</li>
+<li>
+<p>安装 VS Code：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> code</span></span>
+<span class="line"></span></code></pre>
+</li>
+<li>
+<p>下载并安装<a href="https://www.jetbrains.com/lp/mono/">JetBrains Mono</a>字体</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#C2C3C5"># 创建字体目标目录 /usr/share/fonts/JetBrainsMono</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> mkdir</span><span style="color:#2B5581"> -p</span><span style="color:#2B5581"> /usr/share/fonts/JetBrainsMono</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C2C3C5"># 解压 JetBrainsMono.zip 中的所有 .ttf 字体文件到临时目录 /tmp/JetBrainsMono</span></span>
+<span class="line"><span style="color:#6F42C1">unzip</span><span style="color:#2B5581"> -q</span><span style="color:#2B5581"> JetBrainsMono-2.304.zip</span><span style="color:#22863A"> "fonts/ttf/*.ttf"</span><span style="color:#2B5581"> -d</span><span style="color:#2B5581"> /tmp/JetBrainsMono</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C2C3C5"># 将临时目录中的所有 .ttf 文件移动到 /usr/share/fonts/JetBrainsMono 目录</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> find</span><span style="color:#2B5581"> /tmp/JetBrainsMono</span><span style="color:#2B5581"> -type</span><span style="color:#2B5581"> f</span><span style="color:#2B5581"> -name</span><span style="color:#22863A"> "*.ttf"</span><span style="color:#2B5581"> -exec</span><span style="color:#2B5581"> mv</span><span style="color:#2B5581"> {}</span><span style="color:#2B5581"> /usr/share/fonts/JetBrainsMono/</span><span style="color:#24292EFF"> \;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C2C3C5"># 更新字体缓存，确保系统识别新安装的字体</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> fc-cache</span><span style="color:#2B5581"> -fv</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#C2C3C5"># 检查字体是否成功安装并列出包含 JetBrainsMono 字体的路径</span></span>
+<span class="line"><span style="color:#6F42C1">fc-list</span><span style="color:#D32F2F"> |</span><span style="color:#6F42C1"> grep</span><span style="color:#2B5581"> JetBrainsMono</span></span>
+<span class="line"></span></code></pre>
+</li>
+<li>
+<p>设置中搜索“Font Family”，首部追加<code>'JetBrains Mono'</code>，英文逗号分割：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span>'JetBrains Mono', 'Droid Sans Mono', monospace</span></span>
+<span class="line"><span></span></span></code></pre>
+</li>
+</ol>
+<h2 id="flatpak-%E6%B2%99%E7%9B%92%E5%8C%96%E8%BD%AF%E4%BB%B6" tabindex="-1"><a class="header-anchor" href="#flatpak-%E6%B2%99%E7%9B%92%E5%8C%96%E8%BD%AF%E4%BB%B6"><span>Flatpak 沙盒化软件</span></a></h2>
+<ol>
+<li>
+<p>添加 Flathub 仓库：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">flatpak</span><span style="color:#2B5581"> remote-add</span><span style="color:#2B5581"> --if-not-exists</span><span style="color:#2B5581"> flathub</span><span style="color:#2B5581"> https://flathub.org/repo/flathub.flatpakrepo</span></span>
+<span class="line"></span></code></pre>
+<p>可选：修改为上海交通大学镜像：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">flatpak</span><span style="color:#2B5581"> remote-modify</span><span style="color:#2B5581"> flathub</span><span style="color:#2B5581"> --url=https://mirror.sjtu.edu.cn/flathub</span></span>
+<span class="line"></span></code></pre>
+</li>
+<li>
+<p>安装常用应用：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">flatpak</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> flathub</span><span style="color:#2B5581"> io.typora.Typora</span></span>
+<span class="line"><span style="color:#6F42C1">flatpak</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> flathub</span><span style="color:#2B5581"> org.remmina.Remmina</span></span>
+<span class="line"><span style="color:#6F42C1">flatpak</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> flathub</span><span style="color:#2B5581"> com.qq.QQ</span></span>
+<span class="line"><span style="color:#6F42C1">flatpak</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> flathub</span><span style="color:#2B5581"> com.tencent.WeChat</span></span>
+<span class="line"><span style="color:#6F42C1">flatpak</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> flathub</span><span style="color:#2B5581"> com.tencent.wemeet</span></span>
+<span class="line"></span></code></pre>
+</li>
+</ol>
+<h2 id="fedora-%E5%A4%A7%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0" tabindex="-1"><a class="header-anchor" href="#fedora-%E5%A4%A7%E7%89%88%E6%9C%AC%E6%9B%B4%E6%96%B0"><span>Fedora 大版本更新</span></a></h2>
+<p>当 Fedora 发布新版本进入 Beta 之后，可以通过以下命令进行大版本更新：</p>
+<pre class="shiki min-light" style="background-color:#ffffff;color:#24292eff" tabindex="0"><code><span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> upgrade</span><span style="color:#2B5581"> --refresh</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> install</span><span style="color:#2B5581"> dnf-plugin-system-upgrade</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> system-upgrade</span><span style="color:#2B5581"> download</span><span style="color:#2B5581"> --releasever=44</span></span>
+<span class="line"><span style="color:#6F42C1">sudo</span><span style="color:#2B5581"> dnf</span><span style="color:#2B5581"> system-upgrade</span><span style="color:#2B5581"> reboot</span></span>
+<span class="line"></span></code></pre>
+<h2 id="%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99" tabindex="-1"><a class="header-anchor" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span>参考资料</span></a></h2>
+<ul>
+<li><a href="https://demodeom.github.io/2025/10/02/Linux/Fedora43%E4%B8%AA%E4%BA%BA%E9%85%8D%E7%BD%AE/">Fedora 个人配置</a></li>
+<li><a href="https://blog.dejavu.moe/posts/install-and-use-fedora-workstation/">Fedora Linux 安装配置记录</a></li>
+<li><a href="https://plumz.me/archives/14050/">Fedora 42 安装记录</a></li>
+<li><a href="https://vuepress.mirror.docker-practice.com/install/fedora/#%E4%BD%BF%E7%94%A8-dnf-%E5%AE%89%E8%A3%85">Fedora 安装 Docker</a></li>
+</ul>
+
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <div class="wrapper">
+      &copy; 2026 Touken. Minimalist.
+    </div>
+  </footer>
+</body>
+</html>
